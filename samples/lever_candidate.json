@@ -1,0 +1,20 @@
+{
+  "id": "lever-candidate-abc123",
+  "name": "John Smith",
+  "headline": "Lead Frontend Engineer",
+  "summary": "Full-stack engineer focused on frontend architecture.",
+  "location": "New York, NY",
+  "emails": ["john.smith@betainc.com", "john.smith@gmail.com"],
+  "phones": [
+    { "value": "+12125559876", "type": "mobile" }
+  ],
+  "links": [
+    "https://github.com/jsmith",
+    "https://linkedin.com/in/john-smith",
+    "https://johnsmith.dev"
+  ],
+  "tags": ["JavaScript", "React", "TypeScript", "Node.js", "AWS"],
+  "origin": "sourced",
+  "createdAt": 1710500000000,
+  "updatedAt": 1711100000000
+}

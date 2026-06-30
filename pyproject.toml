@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=70.0", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "candidate-transformer"
+version = "1.0.0"
+description = "Production-grade Candidate Data Transformation Engine"
+requires-python = ">=3.11"
+readme = "README.md"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --tb=short"
+pythonpath = ["."]
+
+[tool.coverage.run]
+source = ["src"]
+omit = ["tests/*"]

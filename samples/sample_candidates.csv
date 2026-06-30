@@ -1,0 +1,6 @@
+first_name,last_name,email,phone,location,skills,summary,github_url,linkedin_url,current_company,current_title
+Jane,Doe,jane.doe@gmail.com,+14155551234,"San Francisco, CA","Python, FastAPI, PostgreSQL, Docker","Senior backend engineer with 7 years of experience building distributed systems.",https://github.com/janedoe,https://linkedin.com/in/jane-doe,Acme Corp,Senior Software Engineer
+John,Smith,john.smith@work.com,+12125559876,"New York, NY","JavaScript, React, Node.js, TypeScript, AWS","Full-stack engineer focused on frontend architecture and developer experience.",https://github.com/jsmith,https://linkedin.com/in/john-smith,Beta Inc,Lead Frontend Engineer
+Alice,Zhang,alice.zhang@example.com,,(Remote),"Machine Learning, Python, TensorFlow, PyTorch, Spark",,https://github.com/alicezhang,,,"Principal ML Engineer"
+Bob,Williams,bob@bobwilliams.dev,+441234567890,"London, UK","Go, Rust, C++, gRPC, Kubernetes","Systems programmer and open-source contributor.",https://github.com/bobw,,TechCorp UK,Staff Engineer
+,,"invalid-email-no-at-sign",bad-phone-number,,"Python, SQL","Candidate with bad contact data — should produce warnings.",,,Company X,Developer
