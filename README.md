@@ -15,39 +15,51 @@ See [DESIGN.md](./DESIGN.md) for the full technical design document.
 python --version
 ```
 
-If it shows 3.11 or above, run:
+### Option 1: Running with a Virtual Environment (Recommended)
 
+Using a virtual environment keeps project dependencies isolated:
+
+**On macOS/Linux:**
 ```bash
+# Create virtual environment
+python3 -m venv .venv
+
+# Activate virtual environment
+source .venv/bin/activate
+
+# Install dependencies & run app
 pip install -r requirements.txt
 streamlit run streamlit_app.py
 ```
 
-That's it. The app opens at **http://localhost:8501** in your browser automatically.
+**On Windows (PowerShell):**
+```powershell
+# Create virtual environment
+python -m venv .venv
 
-> On some systems `python` points to Python 2. If so, use `python3` and `pip3` instead:
-> ```bash
-> python3 --version
-> pip3 install -r requirements.txt
-> streamlit run streamlit_app.py
-> ```
+# Activate virtual environment
+.venv\Scripts\Activate.ps1
+
+# Install dependencies & run app
+pip install -r requirements.txt
+streamlit run streamlit_app.py
+```
 
 ---
 
-## One-click scripts
+### Option 2: Running with Global Python
 
-**Windows** — double-click `run.bat` or run in terminal:
-
-```
-run.bat
-```
-
-**macOS / Linux** — run in terminal:
+If you prefer to install packages directly to your global environment:
 
 ```bash
-bash run.sh
+# Install dependencies
+pip install -r requirements.txt
+
+# Run the app
+streamlit run streamlit_app.py
 ```
 
-These scripts install dependencies and start the app in one step.
+> On some systems `python` or `pip` points to Python 2. If so, replace them with `python3` and `pip3` respectively.
 
 ---
 
@@ -100,6 +112,23 @@ GITHUB_TOKEN=your_token_here
 ```
 
 > `.env` is listed in `.gitignore` and will never be committed.
+
+---
+
+## LLM Resume Parser (optional)
+
+The resume parser supports advanced, high-accuracy extraction using Large Language Models (LLMs) via the OpenAI SDK wrapper. 
+
+* **LLM Extraction**: If a `GROQ_API_KEY` is provided, the parser automatically uses the `llama-3.3-70b-versatile` model to extract structured candidate details (skills, experience, contact info, education, etc.) from PDF resumes.
+* **Heuristic Fallback**: If no LLM key is configured, the parser automatically falls back to the built-in rule-based/heuristic parsing mechanism (regex, line analysis, and keyword matching) to extract details without requiring any external APIs.
+
+### Setup
+
+Add your key to the `.env` file in the project root:
+
+```env
+GROQ_API_KEY=your_groq_api_key_here
+```
 
 ---
 
