@@ -9,6 +9,19 @@ See [DESIGN.md](./DESIGN.md) for the full technical design document.
 
 ## Quick start
 
+### Step 0: Clone the Repository
+
+First, clone the repository and navigate into the project directory:
+
+```bash
+git clone https://github.com/sharma-anahita/candidate-transformer.git
+cd candidate-transformer
+```
+
+---
+
+### Step 1: Check Python Version
+
 **You need Python 3.11 or higher.** Check your version:
 
 ```bash
