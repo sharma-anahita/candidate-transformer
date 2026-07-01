@@ -3,7 +3,6 @@ src/adapters/__init__.py — Public API of the adapters package.
 """
 from src.adapters.github_adapter import GitHubAdapter
 from src.adapters.recruiter_notes_adapter import RecruiterNotesAdapter
-from src.adapters.linkedin_adapter import LinkedInAdapter
 from src.adapters.ats_json_adapter import (
     ATSJsonAdapter,
     FieldMapping,
@@ -41,5 +40,4 @@ __all__ = [
     "get_nested",
     "GitHubAdapter",
 "RecruiterNotesAdapter",
-"LinkedInAdapter",
 ]

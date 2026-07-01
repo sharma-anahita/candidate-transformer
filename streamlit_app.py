@@ -12,7 +12,6 @@ from src.adapters.resume_adapter import ResumeAdapter
 from src.adapters.csv_adapter import CSVAdapter
 from src.adapters.ats_json_adapter import ATSJsonAdapter, GREENHOUSE_FIELD_MAPPING
 from src.adapters.github_adapter import GitHubAdapter
-from src.adapters.linkedin_adapter import LinkedInAdapter
 from src.normalizers.candidate_normalizer import CandidateNormalizer
 from src.engines.merge_engine import MergeEngine
 from src.engines.conflict_resolver import ConflictResolver
@@ -195,254 +194,150 @@ def main():
     with col2:
         st.subheader("🌐 Developer Portfolios")
         github_url = st.text_input("GitHub Username or URL", placeholder="e.g. janedoe or https://github.com/janedoe")
-        linkedin_url = st.text_input("LinkedIn Profile URL", placeholder="e.g. https://linkedin.com/in/jane-doe")
         
         st.subheader("🔑 API Secrets (Optional)")
         github_token = st.text_input("GitHub Personal Access Token", type="password", help="To avoid rate limits during repo crawling")
 
     # State Management for Pipeline
-    if "extracted_candidates" not in st.session_state:
-        st.session_state.extracted_candidates = []
-    if "normalized_candidates" not in st.session_state:
-        st.session_state.normalized_candidates = []
-    if "canonical_candidate" not in st.session_state:
-        st.session_state.canonical_candidate = None
     if "final_output" not in st.session_state:
         st.session_state.final_output = None
 
     # Pipeline Actions Area
     st.header("⚙️ Pipeline Execution")
     
-    act_col1, act_col2, act_col3, act_col4 = st.columns(4)
-    
-    with act_col1:
-        extract_btn = st.button("🔌 1. Extract Raw Profile(s)", use_container_width=True)
-    with act_col2:
-        normalize_btn = st.button("🧹 2. Normalize Fields", use_container_width=True)
-    with act_col3:
-        merge_btn = st.button("🔗 3. Merge & Score", use_container_width=True)
-    with act_col4:
-        project_btn = st.button("🚀 4. Generate Output", use_container_width=True)
+    generate_btn = st.button("🚀 Generate Output", use_container_width=True, type="primary")
 
-    # 1. Extract Action
-    if extract_btn:
-        extracted_list = []
-        
-        # Resume
-        if uploaded_resume:
-            with st.spinner("Extracting from PDF Resume..."):
-                try:
-                    import time
-                    start_time = time.time()
-                    resume_adapter = ResumeAdapter()
-                    res_extracted = resume_adapter.extract(uploaded_resume.getvalue())
-                    elapsed_time = time.time() - start_time
-                    extracted_list.append(res_extracted)
-                    st.success(f"Resume extracted successfully in {elapsed_time:.2f} seconds!")
-                except Exception as exc:
-                    st.error(f"Resume extraction failed: {exc}")
-
-        # CSV
-        if uploaded_csv:
-            with st.spinner("Extracting CSV rows..."):
-                csv_rows = parse_csv_upload(uploaded_csv)
-                csv_adapter = CSVAdapter()
-                try:
-                    grouped_candidates = csv_adapter.extract_rows(csv_rows)
-                    extracted_list.extend(grouped_candidates)
-                    if grouped_candidates:
-                        st.success(f"Extracted and grouped {len(grouped_candidates)} candidates from {len(csv_rows)} rows!")
-                except Exception as exc:
-                    st.error(f"CSV extraction failed: {exc}")
-
-        # ATS JSON
-        if uploaded_ats:
-            with st.spinner("Extracting from ATS JSON..."):
-                ats_dict = parse_json_upload(uploaded_ats)
-                if ats_dict:
-                    try:
-                        ats_adapter = ATSJsonAdapter(field_mapping=GREENHOUSE_FIELD_MAPPING, source_label="greenhouse")
-                        ats_extracted = ats_adapter.extract(ats_dict)
-                        extracted_list.append(ats_extracted)
-                        st.success("ATS JSON extracted successfully!")
-                    except Exception as exc:
-                        st.error(f"ATS JSON extraction failed: {exc}")
-
-        # GitHub URL
-        if github_url:
-            with st.spinner(f"Fetching and parsing GitHub profile for '{github_url}'..."):
-                try:
-                    github_adapter = GitHubAdapter(token=github_token if github_token else None)
-                    gh_extracted = github_adapter.extract(github_url)
-                    extracted_list.append(gh_extracted)
-                    
-                    has_github_api_warning = any(w.field == "github_api" for w in gh_extracted.warnings)
-                    if has_github_api_warning:
-                        st.warning("GitHub profile imported successfully with limited information. Some data could not be retrieved because the GitHub API rate limit was reached or authentication was unavailable.")
-                        if not github_token:
-                            st.info("Connect a GitHub Personal Access Token to increase API limits and enable more complete profile extraction.")
-                    else:
-                        st.success("GitHub profile extracted successfully!")
-                except Exception as exc:
-                    st.error(f"GitHub extraction failed: {exc}")
-
-        # LinkedIn URL
-        if linkedin_url:
-            with st.spinner("Mocking LinkedIn export for URL..."):
-                # Construct mock LinkedIn export dictionary
-                username = linkedin_url.split("/in/")[-1].strip("/")
-                mock_source = {
-                    "full_name": username.replace("-", " ").title(),
-                    "headline": "Software Engineer",
-                    "summary": f"Professional profile of {username} on LinkedIn.",
-                    "profile_url": linkedin_url,
-                    "experience": [
-                        {
-                            "company": "Company A",
-                            "title": "Software Engineer",
-                            "start_date": "2020-01-01",
-                            "end_date": "Present",
-                            "description": "Building great systems."
-                        }
-                    ],
-                    "education": [
-                        {
-                            "institution": "University of Technology",
-                            "degree": "B.S. in Computer Science"
-                        }
-                    ],
-                    "skills": ["Python", "FastAPI"]
-                }
-                try:
-                    li_adapter = LinkedInAdapter()
-                    li_extracted = li_adapter.extract(mock_source)
-                    extracted_list.append(li_extracted)
-                    st.success("LinkedIn profile extracted successfully (mocked profile dict)!")
-                except Exception as exc:
-                    st.error(f"LinkedIn extraction failed: {exc}")
-
-        st.session_state.extracted_candidates = extracted_list
-        # Reset downstream state
-        st.session_state.normalized_candidates = []
-        st.session_state.canonical_candidate = None
-        st.session_state.final_output = None
-
-    # 2. Normalize Action
-    if normalize_btn:
-        if not st.session_state.extracted_candidates:
-            st.warning("Please extract raw profile(s) first.")
+    if generate_btn:
+        has_input = (
+            uploaded_resume is not None or
+            uploaded_csv is not None or
+            uploaded_ats is not None or
+            bool(github_url.strip())
+        )
+        if not has_input:
+            st.warning("Please upload or enter at least one candidate data source.")
+            st.session_state.final_output = None
         else:
-            with st.spinner("Normalizing candidate fields..."):
-                normalizer = CandidateNormalizer()
-                normalized_list = []
-                for ext in st.session_state.extracted_candidates:
-                    try:
-                        norm = normalizer.normalize(ext)
-                        normalized_list.append(norm)
-                    except Exception as exc:
-                        st.error(f"Normalization failed for {ext.source_id}: {exc}")
-                st.session_state.normalized_candidates = normalized_list
-                st.success(f"Normalized {len(normalized_list)} profiles successfully!")
-
-    # 3. Merge Action
-    if merge_btn:
-        if not st.session_state.normalized_candidates:
-            st.warning("Please normalize candidate fields first.")
-        else:
-            with st.spinner("Merging profiles & computing confidence scores..."):
-                try:
-                    canonical = merge_sources(st.session_state.normalized_candidates)
-                    st.session_state.canonical_candidate = canonical
-                    st.success("Merged profiles successfully!")
-                except Exception as exc:
-                    st.error(f"Merging failed: {exc}")
-
-    # 4. Project Action
-    if project_btn:
-        if not st.session_state.canonical_candidate:
-            st.warning("Please merge profiles into canonical view first.")
-        else:
-            with st.spinner("Projecting canonical profile..."):
-                try:
-                    from src.projection.engine import ProjectionConfig
-                    cfg_obj = ProjectionConfig.from_runtime(config_json)
-                    for warning in cfg_obj.warnings:
-                        st.warning(warning)
-
-                    projected = generate_output(
-                        st.session_state.canonical_candidate,
-                        cfg_obj
-                    )
-                    st.session_state.final_output = projected
-                    st.success("Generated projected JSON successfully!")
-                except Exception as exc:
-                    from src.projection import ProjectionError
-                    if isinstance(exc, ProjectionError):
-                        st.error(f"Projection failed: {exc}")
-                        st.warning("Below is the data that was successfully projected before the failure:")
-                        st.json(exc.partial_data)
-                    else:
-                        st.error(f"Projection failed: {exc}")
-
-    # Results Visualizer Tabs
-    st.header("📊 Pipeline Output Visualizer")
-    
-    raw_tab, norm_tab, canon_tab, output_tab = st.tabs([
-        "🔍 Raw Extraction",
-        "🧼 Normalized Profiles",
-        "🧬 Canonical Profile",
-        "🚀 Final Projected JSON"
-    ])
-
-    with raw_tab:
-        if not st.session_state.extracted_candidates:
-            st.info("No raw extraction data available. Please click 'Extract Raw Profile(s)'.")
-        else:
-            for i, cand in enumerate(st.session_state.extracted_candidates):
-                with st.expander(f"Source {i+1}: {cand.source_id} ({cand.adapter_name})"):
-                    st.json(cand.model_dump(mode="json"))
-
-    with norm_tab:
-        if not st.session_state.normalized_candidates:
-            st.info("No normalized data available. Please click 'Normalize Fields'.")
-        else:
-            for i, cand in enumerate(st.session_state.normalized_candidates):
-                with st.expander(f"Source {i+1}: {cand.source_id} ({cand.adapter_name})"):
-                    # Show normalization logs
-                    st.subheader("Audit Logs")
-                    for log in cand.normalization_logs:
-                        icon = "✅" if log.success else "⚠️"
-                        st.write(f"{icon} **{log.field}** ({log.normalizer}): `{log.original_value}` ➔ `{log.normalized_value}`")
-                    st.subheader("Data JSON")
-                    st.json(cand.model_dump(mode="json"))
-
-    with canon_tab:
-        if not st.session_state.canonical_candidate:
-            st.info("No canonical profile available. Please click 'Merge & Score'.")
-        else:
-            canon = st.session_state.canonical_candidate
+            extracted_list = []
             
-            # Overview Metrics
-            m_col1, m_col2, m_col3 = st.columns(3)
-            with m_col1:
-                st.metric("Overall Confidence", f"{canon.overall_confidence:.2%}")
-            with m_col2:
-                st.metric("Need Human Review?", "Yes 🔴" if canon.needs_review() else "No 🟢")
-            with m_col3:
-                st.metric("Merged Sources", len(canon.merged_from))
+            # 1. Extract
+            with st.spinner("Extracting from input sources..."):
+                # Resume
+                if uploaded_resume:
+                    try:
+                        import time
+                        start_time = time.time()
+                        resume_adapter = ResumeAdapter()
+                        res_extracted = resume_adapter.extract(uploaded_resume.getvalue())
+                        elapsed_time = time.time() - start_time
+                        extracted_list.append(res_extracted)
+                        st.success(f"Resume extracted successfully in {elapsed_time:.2f} seconds!")
+                    except Exception as exc:
+                        st.error(f"Resume extraction failed: {exc}")
+
+                # CSV
+                if uploaded_csv:
+                    csv_rows = parse_csv_upload(uploaded_csv)
+                    csv_adapter = CSVAdapter()
+                    try:
+                        grouped_candidates = csv_adapter.extract_rows(csv_rows)
+                        extracted_list.extend(grouped_candidates)
+                        if grouped_candidates:
+                            st.success(f"Extracted and grouped {len(grouped_candidates)} candidates from {len(csv_rows)} rows!")
+                    except Exception as exc:
+                        st.error(f"CSV extraction failed: {exc}")
+
+                # ATS JSON
+                if uploaded_ats:
+                    ats_dict = parse_json_upload(uploaded_ats)
+                    if ats_dict:
+                        try:
+                            ats_adapter = ATSJsonAdapter(field_mapping=GREENHOUSE_FIELD_MAPPING, source_label="greenhouse")
+                            ats_extracted = ats_adapter.extract(ats_dict)
+                            extracted_list.append(ats_extracted)
+                            st.success("ATS JSON extracted successfully!")
+                        except Exception as exc:
+                            st.error(f"ATS JSON extraction failed: {exc}")
+
+                # GitHub URL
+                if github_url:
+                    try:
+                        github_adapter = GitHubAdapter(token=github_token if github_token else None)
+                        gh_extracted = github_adapter.extract(github_url)
+                        extracted_list.append(gh_extracted)
+                        
+                        has_github_api_warning = any(w.field == "github_api" for w in gh_extracted.warnings)
+                        if has_github_api_warning:
+                            st.warning("GitHub profile imported successfully with limited information. Some data could not be retrieved because the GitHub API rate limit was reached or authentication was unavailable.")
+                            if not github_token:
+                                st.info("Connect a GitHub Personal Access Token to increase API limits and enable more complete profile extraction.")
+                        else:
+                            st.success("GitHub profile extracted successfully!")
+                    except Exception as exc:
+                        st.error(f"GitHub extraction failed: {exc}")
+
+            if not extracted_list:
+                st.error("No candidate data could be extracted from the provided sources.")
+                st.session_state.final_output = None
+            else:
+                # 2. Normalize
+                with st.spinner("Normalizing candidate fields..."):
+                    normalizer = CandidateNormalizer()
+                    normalized_list = []
+                    for ext in extracted_list:
+                        try:
+                            norm = normalizer.normalize(ext)
+                            normalized_list.append(norm)
+                        except Exception as exc:
+                            st.error(f"Normalization failed for {ext.source_id}: {exc}")
                 
-            # Confidence Breakdown Chart
-            st.subheader("Confidence Scores per Field")
-            st.bar_chart(canon.field_confidences)
-            
-            st.json(canon.model_dump(mode="json"))
+                if not normalized_list:
+                    st.error("Normalization failed for all candidates.")
+                    st.session_state.final_output = None
+                else:
+                    # 3. Merge
+                    canonical = None
+                    with st.spinner("Merging profiles & computing confidence scores..."):
+                        try:
+                            canonical = merge_sources(normalized_list)
+                            st.success("Merged profiles successfully!")
+                        except Exception as exc:
+                            st.error(f"Merging failed: {exc}")
 
-    with output_tab:
-        if st.session_state.final_output is None:
-            st.info("No projected output available. Please click 'Generate Output'.")
-        else:
-            st.json(st.session_state.final_output)
+                    if canonical is None:
+                        st.session_state.final_output = None
+                    else:
+                        # 4. Project
+                        with st.spinner("Projecting canonical profile..."):
+                            try:
+                                from src.projection.engine import ProjectionConfig
+                                cfg_obj = ProjectionConfig.from_runtime(config_json)
+                                for warning in cfg_obj.warnings:
+                                    st.warning(warning)
+
+                                projected = generate_output(
+                                    canonical,
+                                    cfg_obj
+                                )
+                                st.session_state.final_output = projected
+                                st.success("Generated projected JSON successfully!")
+                            except Exception as exc:
+                                from src.projection import ProjectionError
+                                if isinstance(exc, ProjectionError):
+                                    st.error(f"Projection failed: {exc}")
+                                    st.warning("Below is the data that was successfully projected before the failure:")
+                                    st.json(exc.partial_data)
+                                else:
+                                    st.error(f"Projection failed: {exc}")
+
+    # Results Visualizer
+    st.header("📊 Final Output JSON")
+    if st.session_state.final_output is not None:
+        st.json(st.session_state.final_output)
+    else:
+        st.info("No projected output available. Please select input data, update the configuration if needed, and click 'Generate Output'.")
 
 
 if __name__ == "__main__":
     main()
+
